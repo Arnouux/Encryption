@@ -4,6 +4,9 @@
 TODO :
 
 [ ] Hybrid encryption
+
 [ ] Register
+
 [ ] Login (fido protocol)
+
 [ ] GUI
