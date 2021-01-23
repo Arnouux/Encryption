@@ -3,10 +3,10 @@
 
 TODO :
 
-[ ] Hybrid encryption
+- [ ] Hybrid encryption
 
-[ ] Register
+- [ ] Register
 
-[ ] Login (fido protocol)
+- [ ] Login (fido protocol)
 
-[ ] GUI
+- [ ] GUI
