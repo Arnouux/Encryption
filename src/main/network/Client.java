@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -15,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyFactory;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -52,7 +55,7 @@ public class Client extends Thread {
 		this.port = port;
 	}
 	
-	public void send(long targetId, String text) {
+	public void send(String targetName, String text) {
 		try {
 //			if(server != null) {
 //				server.close();
@@ -62,7 +65,7 @@ public class Client extends Thread {
 			OutputStream writer = socket.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
-			RSAPublicKey key = getPublicKeyFromServer(targetId, socket);
+			RSAPublicKey key = getPublicKeyFromServer(targetName, socket);
 			byte[] encrypted = null;
 			Cipher cipher = null;
 			//text = new String(text.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_16);
@@ -79,7 +82,13 @@ public class Client extends Thread {
 			System.out.println("Client " + this.getName() +" writes : " + text);
 			outputStream.writeInt(Protocol.REQ_TEXT);
 			outputStream.writeLong(this.id);
-			outputStream.writeLong(targetId);
+			
+			// TODO server receive
+			byte[] targetNameBytes = targetName.getBytes();
+			outputStream.writeInt(targetNameBytes.length);
+			for(int i=0; i<targetNameBytes.length; i++) {
+				outputStream.writeByte(targetNameBytes[i]);
+			}
 			outputStream.writeInt(encrypted.length);
 			for(int i=0; i<encrypted.length; i++) {
 				outputStream.writeByte(encrypted[i]);
@@ -93,13 +102,19 @@ public class Client extends Thread {
 
 	}
 	
-	private RSAPublicKey getPublicKeyFromServer(long targetId, Socket socket) {
+	private RSAPublicKey getPublicKeyFromServer(String targetName, Socket socket) {
 		RSAPublicKey keyTarget = null;
 		try {
 			OutputStream writer = socket.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			outputStream.writeInt(Protocol.REQ_PUBLIC_KEY);
-			outputStream.writeLong(targetId);
+			
+			// TODO server receive
+			byte[] targetNameBytes = targetName.getBytes();
+			outputStream.writeInt(targetNameBytes.length);
+			for(int i=0; i<targetNameBytes.length; i++) {
+				outputStream.writeByte(targetNameBytes[i]);
+			}
 			
 			InputStream reader = socket.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
@@ -189,19 +204,44 @@ public class Client extends Thread {
 	}
 	
 	public void register(String name) {
-		// TODO			
 		try {
 			Socket socket = new Socket("localhost", 8888);
 			OutputStream writer = socket.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			outputStream.writeInt(Protocol.REQ_REGISTER);
+			
+			// Client sending user name
 			byte[] bytes = name.getBytes();
 			int size = bytes.length;
 			outputStream.writeInt(size);
 			for (int i=0; i<size; i++) {
 				outputStream.writeByte(bytes[i]);
 			}
-
+			
+			// Client generating new key pair
+			KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+			kpg.initialize(2048);
+			KeyPair kp = kpg.generateKeyPair();
+			byte[] ePubKey = kp.getPublic().getEncoded();
+			byte[] ePriKey = kp.getPrivate().getEncoded();
+			
+			// Client saving private key in store.ks
+			KeyStore ks = KeyStore.getInstance("JCEKS");
+			ks.load(new FileInputStream("store.ks"),"abc123".toCharArray());
+			ks.setKeyEntry("key_"+name, ePriKey, null);
+			FileOutputStream fos = new FileOutputStream("store.ks");
+			ks.store(fos, "abc123".toCharArray());
+			/*
+			 * keytool -list -keystore store.ks -storepass abc123
+			 */
+			
+			// Client sending public key
+			size = ePubKey.length;
+			outputStream.writeInt(size);
+			for (int i=0; i<size; i++) {
+				outputStream.writeByte(ePubKey[i]);
+			}
+			
 			InputStream reader = socket.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
 			if(inputStream.readInt() == Protocol.OK) {
@@ -210,7 +250,7 @@ public class Client extends Thread {
 				System.out.println("KO");
 			}
 			socket.close();
-		} catch (IOException e) {
+		} catch (IOException | NoSuchAlgorithmException | KeyStoreException | CertificateException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

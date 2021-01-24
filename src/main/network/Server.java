@@ -1,22 +1,35 @@
 package main.network;
 
+import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.X509EncodedKeySpec;
 
 import org.bson.Document;
+
+import static com.mongodb.client.model.Filters.*;
+import static com.mongodb.client.model.Updates.*;
 
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.UpdateOptions;
 
 import main.common.Protocol;
 
@@ -98,39 +111,57 @@ public class Server extends Thread {
 	
 	private void doRegister(Socket connection) {
 		MongoCollection<Document> coll = db.getCollection("users");
-		System.out.println("Registering");
 		
 
 //		Document doc = new Document().append("user", "name1");
 //		coll.insertOne(doc);
-		
+
 		try {
 			InputStream reader = connection.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
+			
+			// Server receiving user name
 			int size = inputStream.readInt();
 			byte[] bytesName = new byte[size];
 			for(int i=0; i<size; i++) {
 				bytesName[i] = inputStream.readByte();
 			}
-			
-			KeyStore ks = KeyStore.getInstance("JCEKS");
-			ks.load(new FileInputStream("store.ks"),"abc123".toCharArray());
+			String name = new String(bytesName);
 
+			System.out.println("Registering as " + name);
+			// Server receiving public key
+			size = inputStream.readInt();
+			byte[] bytesPubKey = new byte[size];
+			for(int i=0; i<size; i++) {
+				bytesPubKey[i] = inputStream.readByte();
+			}
+			
+//          X509Certificate[] certChain = new X509Certificate[1];
+//          certChain[0] = certificate;
+			KeyStore ks = KeyStore.getInstance("JCEKS");
+			ks.load(new FileInputStream("storeServer.ks"),"abc123".toCharArray());
+			ks.setKeyEntry(name, bytesPubKey, null);
+			FileOutputStream fos = new FileOutputStream("storeServer.ks");
+			ks.store(fos, "abc123".toCharArray());
+			/*
+			 * keytool -list -keystore storeServer.ks -storepass abc123
+			 */
 			
 			Document doc = new Document()
-					.append("user", new String(bytesName))
-					.append("publicKey", publicKey);
+					.append("_id", new String(bytesName));
+			
 			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
-			// TODO update ?
-			if(coll.insertOne(doc) != null) {
+			
+			// Server sends info about registration
+			if(coll.updateOne(eq("_id",name), setOnInsert("_id", name), new UpdateOptions().upsert(true)).getUpsertedId() != null) {
 				outputStream.writeInt(Protocol.OK);
 			} else {
 				outputStream.writeInt(Protocol.KO);
 			}
 			
 			connection.close();
-		} catch (IOException e) {
+		} catch (IOException | NoSuchAlgorithmException | CertificateException | KeyStoreException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

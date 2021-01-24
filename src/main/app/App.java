@@ -22,8 +22,9 @@ public class App {
 		new Thread(clientReceiver).start();
 		
 		clientSender.register("user1");
+		clientReceiver.register("user2");
 		
-		clientSender.send(7001, "salut de 0");
+		clientSender.send("user2", "salut de 0");
 		clientReceiver.send(7000, "et là ça marche tjours ?");
 		//clientReceiver.stopClient();
 		System.out.println("--------------------");
