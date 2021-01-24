@@ -189,7 +189,31 @@ public class Client extends Thread {
 	}
 	
 	public void register(String name) {
-		// TODO
+		// TODO			
+		try {
+			Socket socket = new Socket("localhost", 8888);
+			OutputStream writer = socket.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			outputStream.writeInt(Protocol.REQ_REGISTER);
+			byte[] bytes = name.getBytes();
+			int size = bytes.length;
+			outputStream.writeInt(size);
+			for (int i=0; i<size; i++) {
+				outputStream.writeByte(bytes[i]);
+			}
+
+			InputStream reader = socket.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			if(inputStream.readInt() == Protocol.OK) {
+				System.out.println("OK");
+			} else {
+				System.out.println("KO");
+			}
+			socket.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void run() {

@@ -2,12 +2,21 @@ package main.network;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyStore;
+
+import org.bson.Document;
+
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 
 import main.common.Protocol;
 
@@ -15,6 +24,13 @@ import java.lang.Thread;
 
 
 public class Server extends Thread {
+	private MongoClient client;
+	private MongoDatabase db;
+	
+	public Server() {
+		client = MongoClients.create("mongodb://127.0.0.1:27017/");
+		db = client.getDatabase("keys");
+	}
 	
 	private Socket socket;
 	private ServerSocket server;
@@ -81,8 +97,43 @@ public class Server extends Thread {
 	
 	
 	private void doRegister(Socket connection) {
-		// TODO Auto-generated method stub
-		//client = MongoClients;
+		MongoCollection<Document> coll = db.getCollection("users");
+		System.out.println("Registering");
+		
+
+//		Document doc = new Document().append("user", "name1");
+//		coll.insertOne(doc);
+		
+		try {
+			InputStream reader = connection.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			int size = inputStream.readInt();
+			byte[] bytesName = new byte[size];
+			for(int i=0; i<size; i++) {
+				bytesName[i] = inputStream.readByte();
+			}
+			
+			KeyStore ks = KeyStore.getInstance("JCEKS");
+			ks.load(new FileInputStream("store.ks"),"abc123".toCharArray());
+
+			
+			Document doc = new Document()
+					.append("user", new String(bytesName))
+					.append("publicKey", publicKey);
+			OutputStream writer = connection.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			// TODO update ?
+			if(coll.insertOne(doc) != null) {
+				outputStream.writeInt(Protocol.OK);
+			} else {
+				outputStream.writeInt(Protocol.KO);
+			}
+			
+			connection.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void doConnect(Object connect) {

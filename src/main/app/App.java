@@ -21,12 +21,14 @@ public class App {
 		new Thread(clientSender).start();
 		new Thread(clientReceiver).start();
 		
+		clientSender.register("user1");
+		
 		clientSender.send(7001, "salut de 0");
 		clientReceiver.send(7000, "et là ça marche tjours ?");
-		clientReceiver.stopClient();
+		//clientReceiver.stopClient();
 		System.out.println("--------------------");
 		clientSender.send(7001, "salut de 0 une 2e fois");
-		clientReceiver = new Client(1, 7001);
+		//clientReceiver = new Client(1, 7001);
 		//clientSender.stopClient();
 		//server.stopServer();
 		//clientReceiver.stopClient();

@@ -1,6 +1,7 @@
 package main.common;
 
 public class Protocol {
+	public static final int OK					= 10;
 	public static final int KO 					= 20;
 	
 	public static final int REQ_TEXT			= 1001;
@@ -10,4 +11,5 @@ public class Protocol {
 
 	public static final int REQ_CONNECT 		= 8000;
 	public static final int REQ_REGISTER 		= 8001;
+
 }
