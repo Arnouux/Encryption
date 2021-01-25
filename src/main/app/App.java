@@ -20,22 +20,22 @@ public class App {
 //		clientReceiver.run();
 //		clientSender.run();
 		new Thread(server).start();
-		clientSender.register("user1");
-		clientReceiver.register("user2");
-
-		// SLEEP
-		try {
-			TimeUnit.SECONDS.sleep(4);
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//		clientSender.register("user1");
+//		clientReceiver.register("user2");
+//
+//		// SLEEP
+//		try {
+//			TimeUnit.SECONDS.sleep(2);
+//		} catch (InterruptedException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 		new Thread(clientSender).start();
 		new Thread(clientReceiver).start();
 		
 		// SLEEP
 		try {
-			TimeUnit.SECONDS.sleep(4);
+			TimeUnit.SECONDS.sleep(3);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -44,7 +44,6 @@ public class App {
 		clientSender.send("user2", "salut de 0");
 		clientReceiver.send("user1", "et là ça marche tjours ?");
 		//clientReceiver.stopClient();
-		System.out.println("--------------------");
 		clientSender.send("user2", "salut de 0 une 2e fois");
 		//clientReceiver = new Client(1, 7001);
 		//clientSender.stopClient();
