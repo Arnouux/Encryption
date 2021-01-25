@@ -10,3 +10,5 @@ TODO :
 - [X] Login (fido protocol)
      - [ ] own ks pwd
 - [ ] GUI
+
+- [ ] contact list
