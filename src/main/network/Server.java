@@ -181,7 +181,7 @@ public class Server extends Thread {
 			} else {
 				outputStream.writeInt(Protocol.KO);
 			}
-			
+		
 			connection.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

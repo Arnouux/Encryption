@@ -57,6 +57,7 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 import main.common.Protocol;
+import main.common.Utility;
 
 import java.lang.Thread;
 import java.math.BigInteger;
@@ -216,17 +217,12 @@ public class Client extends Thread {
 
 			outputStream.writeInt(Protocol.REQ_CONNECT);
 			port = server.getLocalPort();
-			System.out.println("Port used : " + port);
 			outputStream.writeInt(port);
 			
 			// Client sending user name
-			byte[] bytes = name.getBytes();
-			int size = bytes.length;
-			outputStream.writeInt(size);
-			for (int i=0; i<size; i++) {
-				outputStream.writeByte(bytes[i]);
-			}
+			Utility.writeString(name, outputStream);
 			
+			// TODO client sending data to verify key pair
 
 			socket.close();
 		} catch (IOException e) {
@@ -243,12 +239,7 @@ public class Client extends Thread {
 			outputStream.writeInt(Protocol.REQ_REGISTER);
 			
 			// Client sending user name
-			byte[] bytes = name.getBytes();
-			int size = bytes.length;
-			outputStream.writeInt(size);
-			for (int i=0; i<size; i++) {
-				outputStream.writeByte(bytes[i]);
-			}
+			Utility.writeString(name, outputStream);
 			
 			// Client generating new key pair
 			KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
@@ -279,12 +270,7 @@ public class Client extends Thread {
 			
 			RSAPublicKey publicKey = (RSAPublicKey) kp.getPublic();
 			String b64publicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
-			byte[] encoded = b64publicKey.getBytes();
-			size = encoded.length;
-			outputStream.writeInt(size);
-			for (int i=0; i<size; i++) {
-				outputStream.writeByte(encoded[i]);
-			}
+			Utility.writeString(b64publicKey, outputStream);
 			
 			KeyFactory kf = KeyFactory.getInstance("RSA");
 			publicKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(b64publicKey)));
@@ -315,6 +301,7 @@ public class Client extends Thread {
 			e.printStackTrace();
 		}
 	}
+
 
 	public void run() {
 		System.out.println("Client " + this.getName() +" listening");
@@ -386,7 +373,6 @@ public class Client extends Thread {
 	public String getMessage() {
 		return this.message;
 	}
-	
 	
 	public static void main(String[] args) {
 //		Client client = new Client();
