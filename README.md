@@ -7,6 +7,6 @@ TODO :
 
 - [X] Register
 
-- [X] Login (fido protocol) -> [ ] own ks pwd
-
+- [X] Login (fido protocol)
+     - [ ] own ks pwd
 - [ ] GUI
