@@ -5,8 +5,10 @@ TODO :
 
 - [ ] Hybrid encryption
 
-- [ ] Register
+- [X] Register
 
-- [ ] Login (fido protocol)
-
+- [X] Login (fido protocol)
+     - [ ] own ks pwd
 - [ ] GUI
+
+- [ ] contact list
