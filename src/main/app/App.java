@@ -1,5 +1,7 @@
 package main.app;
 
+import java.util.concurrent.TimeUnit;
+
 import main.network.Client;
 import main.network.Server;
 
@@ -11,24 +13,39 @@ public class App {
 	
 	public void start() {
 		server = new Server();
-		clientSender = new Client(0, 7000);
-		clientReceiver = new Client(1, 7001);
+		clientSender = new Client(0, "user1");
+		clientReceiver = new Client(1, "user2");
 
 //		server.run();
 //		clientReceiver.run();
 //		clientSender.run();
 		new Thread(server).start();
+		clientSender.register("user1");
+		clientReceiver.register("user2");
+
+		// SLEEP
+		try {
+			TimeUnit.SECONDS.sleep(4);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		new Thread(clientSender).start();
 		new Thread(clientReceiver).start();
 		
-		clientSender.register("user1");
-		clientReceiver.register("user2");
+		// SLEEP
+		try {
+			TimeUnit.SECONDS.sleep(4);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		clientSender.send("user2", "salut de 0");
-		clientReceiver.send(7000, "et là ça marche tjours ?");
+		clientReceiver.send("user1", "et là ça marche tjours ?");
 		//clientReceiver.stopClient();
 		System.out.println("--------------------");
-		clientSender.send(7001, "salut de 0 une 2e fois");
+		clientSender.send("user2", "salut de 0 une 2e fois");
 		//clientReceiver = new Client(1, 7001);
 		//clientSender.stopClient();
 		//server.stopServer();
