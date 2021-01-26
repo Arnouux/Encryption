@@ -10,11 +10,13 @@ public class App {
 	public Server server;
 	public Client clientSender;
 	public Client clientReceiver;
+	public Client clientStranger;
 	
 	public void start() {
 		server = new Server();
 		clientSender = new Client(0, "user1");
-		clientReceiver = new Client(1, "user2");
+		clientReceiver = new Client(1, "user2");;
+		clientStranger = new Client(2, "user3");
 
 //		server.run();
 //		clientReceiver.run();
@@ -47,7 +49,7 @@ public class App {
 		clientSender.send("user2", "salut de 0");
 		clientReceiver.send("user1", "et là ça marche tjours ?");
 		//clientReceiver.stopClient();
-		clientSender.send("user2", "salut de 0 une 2e fois");
+		clientStranger.send("user2", "salut de stranger");
 		//clientReceiver = new Client(1, 7001);
 		//clientSender.stopClient();
 		//server.stopServer();
