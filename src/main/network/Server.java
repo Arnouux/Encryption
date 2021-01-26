@@ -53,6 +53,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.UpdateOptions;
 
 import main.common.Protocol;
+import main.common.Utility;
 
 import java.lang.Thread;
 import java.math.BigInteger;
@@ -109,6 +110,9 @@ public class Server extends Thread {
 				case Protocol.REQ_CONNECT :
 					doConnect(connection);
 					break;
+				case Protocol.REQ_CONTACT :
+					doSendContact(connection);
+					break;
 				case Protocol.REQ_TEXT :
 					doSendText(connection);
 					break;
@@ -134,6 +138,32 @@ public class Server extends Thread {
 	}
 	
 	
+	private void doSendContact(Socket connection) {
+		try {
+			InputStream reader = connection.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			String name = Utility.readString(inputStream);
+			String nameTarget = Utility.readString(inputStream);
+			
+			MongoCollection<Document> coll = db.getCollection("users");
+			Document doc = coll.find(eq("_id", nameTarget)).first();
+			
+			OutputStream writer = connection.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			if(doc != null) {
+				coll.updateOne(eq("_id", name), push("contacts", nameTarget));
+				outputStream.writeInt(Protocol.OK);
+			} else {
+				outputStream.writeInt(Protocol.KO);
+			}
+			
+			connection.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	private void doRegister(Socket connection) {
 		MongoCollection<Document> coll = db.getCollection("users");
 
@@ -142,22 +172,11 @@ public class Server extends Thread {
 			DataInputStream inputStream = new DataInputStream(reader);
 			
 			// Server receiving user name
-			int size = inputStream.readInt();
-			byte[] bytesName = new byte[size];
-			for(int i=0; i<size; i++) {
-				bytesName[i] = inputStream.readByte();
-			}
-			String name = new String(bytesName);
+			String name = Utility.readString(inputStream);
 
 			System.out.println("Registering as " + name);
 			// Server receiving public key
-			size = inputStream.readInt();
-			byte[] keyEncoded = new byte[size];
-			for(int i=0; i<size; i++) {
-				keyEncoded[i] = inputStream.readByte();
-			}
-			
-			String b64key = new String(keyEncoded);
+			String b64key = Utility.readString(inputStream);
 
 //			Document doc = new Document()
 //					.append("_id", new String(bytesName))
@@ -167,8 +186,8 @@ public class Server extends Thread {
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
 			// Server sends info about registration
-			List<BasicDBObject> contacts = new ArrayList<>();
-			contacts.add(new BasicDBObject("user", name));
+			List<String> contacts = new ArrayList<>();
+			contacts.add(name);
 			if(coll.updateOne(eq("_id",name),
 					combine(setOnInsert("_id", name),
 							setOnInsert("publicKey", b64key),

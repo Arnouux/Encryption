@@ -12,5 +12,6 @@ public class Protocol {
 
 	public static final int REQ_CONNECT 		= 8000;
 	public static final int REQ_REGISTER 		= 8001;
+	public static final int REQ_CONTACT 		= 8002;
 
 }

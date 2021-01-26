@@ -303,7 +303,31 @@ public class Client extends Thread {
 	}
 
 	public void addContact(String name) {
-		// TODO
+		Socket socket;
+		try {
+			socket = new Socket("localhost", 8888);
+			OutputStream writer = socket.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			
+			outputStream.writeInt(Protocol.REQ_CONTACT);
+			Utility.writeString(this.name, outputStream);
+			Utility.writeString(name, outputStream);
+
+			InputStream reader = socket.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			int type = inputStream.readInt();
+			switch(type) {
+			case Protocol.OK:
+				System.out.println("Add contact went OK");
+				break;
+			case Protocol.KO:
+				System.out.println("Add contact went KO");
+				break;
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	public void run() {

@@ -20,9 +20,12 @@ public class App {
 //		clientReceiver.run();
 //		clientSender.run();
 		new Thread(server).start();
+		
 		clientSender.register("user1");
 		clientReceiver.register("user2");
-//
+		clientSender.addContact("user2");
+		clientReceiver.addContact("user1");
+		
 //		// SLEEP
 //		try {
 //			TimeUnit.SECONDS.sleep(2);
