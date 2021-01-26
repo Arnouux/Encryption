@@ -302,6 +302,9 @@ public class Client extends Thread {
 		}
 	}
 
+	public void addContact(String name) {
+		// TODO
+	}
 
 	public void run() {
 		System.out.println("Client " + this.getName() +" listening");

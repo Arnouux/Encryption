@@ -26,11 +26,13 @@ import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -43,6 +45,7 @@ import org.bson.conversions.Bson;
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
 
+import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -155,28 +158,22 @@ public class Server extends Thread {
 			}
 			
 			String b64key = new String(keyEncoded);
-			
-//			CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
-//			X509Certificate cert = (X509Certificate)certFactory.generateCertificate(new ByteArrayInputStream(certEncoded));
-//			
-//			KeyStore ks = KeyStore.getInstance("JCEKS");
-//			ks.load(new FileInputStream("storeServer.ks"),"abc123".toCharArray());
-//			ks.setCertificateEntry(name, cert);
-//			FileOutputStream fos = new FileOutputStream("storeServer.ks");
-//			ks.store(fos, "abc123".toCharArray());
-			/*
-			 * keytool -list -keystore storeServer.ks -storepass abc123
-			 */
-			
-			Document doc = new Document()
-					.append("_id", new String(bytesName))
-					.append("publicKey", b64key);
+
+//			Document doc = new Document()
+//					.append("_id", new String(bytesName))
+//					.append("publicKey", b64key);
 			
 			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
 			// Server sends info about registration
-			if(coll.updateOne(eq("_id",name), combine(setOnInsert("_id", name), setOnInsert("publicKey", b64key)), new UpdateOptions().upsert(true)).getUpsertedId() != null) {
+			List<BasicDBObject> contacts = new ArrayList<>();
+			contacts.add(new BasicDBObject("user", name));
+			if(coll.updateOne(eq("_id",name),
+					combine(setOnInsert("_id", name),
+							setOnInsert("publicKey", b64key),
+							setOnInsert("contacts", contacts)),
+					new UpdateOptions().upsert(true)).getUpsertedId() != null) {
 				outputStream.writeInt(Protocol.OK);
 			} else {
 				outputStream.writeInt(Protocol.KO);

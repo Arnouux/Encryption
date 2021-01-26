@@ -20,8 +20,8 @@ public class App {
 //		clientReceiver.run();
 //		clientSender.run();
 		new Thread(server).start();
-//		clientSender.register("user1");
-//		clientReceiver.register("user2");
+		clientSender.register("user1");
+		clientReceiver.register("user2");
 //
 //		// SLEEP
 //		try {
