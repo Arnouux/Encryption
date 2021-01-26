@@ -23,6 +23,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Signature;
 import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
@@ -46,7 +47,6 @@ import javax.crypto.CipherOutputStream;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 
-import org.bouncycastle.asn1.ocsp.Signature;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
@@ -106,6 +106,9 @@ public class Client extends Thread {
 			//outputStream.writeLong(this.id);
 			
 			// TODO server receive
+			// Signature from connect token
+			
+			
 			outputStream.writeInt(this.port);
 			byte[] targetNameBytes = targetName.getBytes();
 			outputStream.writeInt(targetNameBytes.length);
@@ -222,10 +225,43 @@ public class Client extends Thread {
 			// Client sending user name
 			Utility.writeString(name, outputStream);
 			
-			// TODO client sending data to verify key pair
+			// client needs to sign challenge
+			KeyStore ks = KeyStore.getInstance("JCEKS");
+			ks.load(new FileInputStream("store.ks"),"abc123".toCharArray());
+			RSAPrivateKey privateKey = (RSAPrivateKey) ks.getKey("key_"+this.name, "abc123".toCharArray());
+
+			InputStream reader = socket.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			// receive a challenge
+			byte[] challenge = Utility.readBytes(inputStream);
+			Signature sig = Signature.getInstance("SHA256withRSA");
+			sig.initSign(privateKey);
+			sig.update(challenge);
+			byte[] signature = sig.sign();
+			
+			Utility.writeBytes(signature, outputStream);
+			
+			int type = inputStream.readInt();
+			switch(type) {
+			case Protocol.OK:
+				System.out.println("Connection went OK");
+				break;
+			case Protocol.KO:
+				System.out.println("Connection went KO");
+				break;
+			default :
+				System.out.println("Connection lost");
+				break;
+			}
 
 			socket.close();
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | UnrecoverableKeyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvalidKeyException | SignatureException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

@@ -12,11 +12,14 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
+import java.security.Signature;
+import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -33,6 +36,7 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -99,7 +103,6 @@ public class Server extends Thread {
 					break;
 				}
 				if(connection.isClosed()) {
-					System.out.println("Waiting for connection");
 					connection = server.accept();
 				}
 				InputStream reader = connection.getInputStream();
@@ -174,7 +177,6 @@ public class Server extends Thread {
 			// Server receiving user name
 			String name = Utility.readString(inputStream);
 
-			System.out.println("Registering as " + name);
 			// Server receiving public key
 			String b64key = Utility.readString(inputStream);
 
@@ -213,18 +215,42 @@ public class Server extends Thread {
 			int port = inputStream.readInt();
 			
 			// Server receiving user name
-			int size = inputStream.readInt();
-			byte[] bytesName = new byte[size];
-			for(int i=0; i<size; i++) {
-				bytesName[i] = inputStream.readByte();
-			}
-			String name = new String(bytesName);
+			String name = Utility.readString(inputStream);
 			
-			connectedByName.put(name, port);
-			connectedByPort.put(port, name);
+			OutputStream writer = connection.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			
+			// Server sending challenge to user
+			byte[] challenge = new byte[10000];
+			ThreadLocalRandom.current().nextBytes(challenge);
+			Utility.writeBytes(challenge, outputStream);
+			
+			
+			byte[] signature = Utility.readBytes(inputStream);
+			Signature sig = Signature.getInstance("SHA256withRSA");
+			
+			// Server searching user public key
+			MongoCollection<Document> coll = db.getCollection("users");
+			Document doc = coll.find(eq("_id",name)).first();
+			String b64key = (String) doc.get("publicKey");
+
+			KeyFactory kf = KeyFactory.getInstance("RSA");
+			RSAPublicKey publicKey = (RSAPublicKey) kf.generatePublic(new X509EncodedKeySpec(Base64.getDecoder().decode(b64key)));
+
+			
+			sig.initVerify(publicKey);
+			sig.update(challenge);
+			if(sig.verify(signature)) {
+				outputStream.writeInt(Protocol.OK);
+				
+				connectedByName.put(name, port);
+				connectedByPort.put(port, name);
+			} else {
+				outputStream.writeInt(Protocol.KO);
+			}
 			
 			connection.close();
-		} catch (IOException e) {
+		} catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
@@ -310,8 +336,8 @@ public class Server extends Thread {
 				bytes[i] = inputStream.readByte();
 			}
 			
-			System.out.println("Server reads : " + new String(bytes,StandardCharsets.UTF_8) +
-							   " (from " + this.connectedByPort.get(portSender) + ")");
+//			System.out.println("Server reads : " + new String(bytes,StandardCharsets.UTF_8) +
+//							   " (from " + this.connectedByPort.get(portSender) + ")");
 			socket = new Socket("localhost", this.connectedByName.get(nameTarget));
 			OutputStream writer = socket.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
