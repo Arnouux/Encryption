@@ -119,6 +119,9 @@ public class Server extends Thread {
 				case Protocol.REQ_CONTACT :
 					doSendContact(connection);
 					break;
+				case Protocol.REQ_CONTACTS_LIST:
+					doSendContactsList(connection);
+					break;
 				case Protocol.REQ_TEXT :
 					doSendText(connection);
 					break;
@@ -144,6 +147,22 @@ public class Server extends Thread {
 	}
 	
 	
+	private void doSendContactsList(Socket connection) {
+		// TODO Auto-generated method stub
+
+		InputStream reader;
+		try {
+			OutputStream writer = connection.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			
+			outputStream.writeInt(Protocol.REPLY_CONTACTS_LIST);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+
 	private void doSendContact(Socket connection) {
 		try {
 			InputStream reader = connection.getInputStream();

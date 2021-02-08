@@ -35,9 +35,11 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -353,6 +355,25 @@ public class Client extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public List<String> getContacts() {
+		
+		ArrayList<String> contacts = new ArrayList<String>();
+
+		try {
+			OutputStream writer = connection.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			
+			outputStream.writeInt(Protocol.REQ_CONTACTS_LIST);
+			// TODO wait for main stream to receive list
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return contacts;
 	}
 
 	public void run() {
