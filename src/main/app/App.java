@@ -43,12 +43,15 @@ public class App {
 		
 		// SLEEP
 		try {
-			TimeUnit.SECONDS.sleep(2);
+			TimeUnit.SECONDS.sleep(5);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
+		System.out.println("CONTACTS LIST");
+		clientSender.getContacts();
+		System.out.println("END CONTACTS LIST");
 		clientSender.send("user2", "salut de 0");
 		
 		clientReceiver.send("user1", "et là ça marche tjours ?");
