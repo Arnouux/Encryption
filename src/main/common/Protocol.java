@@ -9,9 +9,11 @@ public class Protocol {
 	public static final int REQ_PUBLIC_KEY 		= 1000;
 	public static final int REPLY_PUBLIC_KEY 	= 2000;
 	public static final int REPLY_TEXT			= 2001;
+	public static final int REPLY_CONTACTS_LIST = 3003;
 
 	public static final int REQ_CONNECT 		= 8000;
 	public static final int REQ_REGISTER 		= 8001;
 	public static final int REQ_CONTACT 		= 8002;
+	public static final int REQ_CONTACTS_LIST 	= 8003;
 
 }
