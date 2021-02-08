@@ -69,6 +69,13 @@ public class Client extends Thread {
 	private int port;
 	private ServerSocket server;
 	private String message = "a";
+
+	private InputStream readerServer;
+	private DataInputStream inputStreamServer;
+
+	private volatile RSAPublicKey publicKeyTarget;
+	
+	Socket connection;
 	
 	public Client(long id, String name) {
 		this.id = id;
@@ -81,18 +88,21 @@ public class Client extends Thread {
 //				server.close();
 //			}
 			
-			Socket socket = new Socket("localhost", 8888);
-			
-			OutputStream writer = socket.getOutputStream();
+			//Socket socket = new Socket("localhost", 8888);
+			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
-			RSAPublicKey key = getPublicKeyFromServer(targetName, socket);
+
+			getPublicKeyFromServer(targetName);
+			//readPublicKey(connection);
+			while(publicKeyTarget == null) {
+			}
 			byte[] encrypted = null;
 			Cipher cipher = null;
 			//text = new String(text.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_16);
 			try {
 				cipher = Cipher.getInstance("RSA/ECB/OAEPWithSHA1AndMGF1Padding");
-				cipher.init(Cipher.ENCRYPT_MODE, key);
+				cipher.init(Cipher.ENCRYPT_MODE, publicKeyTarget);
 				encrypted = cipher.doFinal(text.getBytes());
 			} catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
 				// TODO Auto-generated catch block
@@ -119,20 +129,23 @@ public class Client extends Thread {
 			for(int i=0; i<encrypted.length; i++) {
 				outputStream.writeByte(encrypted[i]);
 			}
-			socket.close();
+			//socket.close();
 //			System.out.println("Client " + this.getName() + " stopped");
 //			Thread.currentThread().interrupt();
+			publicKeyTarget = null;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 
 	}
 	
-	private RSAPublicKey getPublicKeyFromServer(String targetName, Socket socket) {
-		RSAPublicKey keyTarget = null;
+	private void getPublicKeyFromServer(String targetName) {
+
+		OutputStream writer;
 		try {
-			OutputStream writer = socket.getOutputStream();
+			writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
+			
 			outputStream.writeInt(Protocol.REQ_PUBLIC_KEY);
 
 			byte[] targetNameBytes = targetName.getBytes();
@@ -140,37 +153,11 @@ public class Client extends Thread {
 			for(int i=0; i<targetNameBytes.length; i++) {
 				outputStream.writeByte(targetNameBytes[i]);
 			}
-			
-			InputStream reader = socket.getInputStream();
-			DataInputStream inputStream = new DataInputStream(reader);
-
-			int type = inputStream.readInt();
-			switch(type) {
-			case Protocol.REPLY_PUBLIC_KEY:
-				KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-				int sizeMod = inputStream.readInt();
-				byte[] bytesMod = new byte[sizeMod];
-				for(int i=0; i<sizeMod; i++) {
-					bytesMod[i] = inputStream.readByte();
-				}
-				int sizeExp = inputStream.readInt();
-				byte[] bytesExp = new byte[sizeExp];
-				for(int i=0; i<sizeExp; i++) {
-					bytesExp[i] = inputStream.readByte();
-				}
-				RSAPublicKeySpec keySpec = new RSAPublicKeySpec(new BigInteger(bytesMod), new BigInteger(bytesExp));
-				keyTarget = (RSAPublicKey) keyFactory.generatePublic(keySpec);
-				break;
-			case Protocol.KO:
-				System.out.println("getKeyFromServer went KO");
-				break;
-			}	
-			//reader.close();
-		} catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return keyTarget;
-		
+	
 	}
 	
 	public void sendPublicKey(Socket socket) {
@@ -212,10 +199,10 @@ public class Client extends Thread {
 		this.STOP = true;
 	}
 	
-	public void connect(String name) {
+	public Socket connect(String name) {
 		try {
-			Socket socket = new Socket("localhost", 8888);
-			OutputStream writer = socket.getOutputStream();
+			Socket connection = new Socket("localhost", 8888);
+			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 
 			outputStream.writeInt(Protocol.REQ_CONNECT);
@@ -230,8 +217,9 @@ public class Client extends Thread {
 			ks.load(new FileInputStream("store.ks"),"abc123".toCharArray());
 			RSAPrivateKey privateKey = (RSAPrivateKey) ks.getKey("key_"+this.name, "abc123".toCharArray());
 
-			InputStream reader = socket.getInputStream();
+			InputStream reader = connection.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
+
 			// receive a challenge
 			byte[] challenge = Utility.readBytes(inputStream);
 			Signature sig = Signature.getInstance("SHA256withRSA");
@@ -253,8 +241,8 @@ public class Client extends Thread {
 				System.out.println("Connection lost");
 				break;
 			}
-
-			socket.close();
+			return connection;
+			//socket.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -265,6 +253,7 @@ public class Client extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return connection;
 	}
 	
 	public void register(String name) {
@@ -341,15 +330,15 @@ public class Client extends Thread {
 	public void addContact(String name) {
 		Socket socket;
 		try {
-			socket = new Socket("localhost", 8888);
-			OutputStream writer = socket.getOutputStream();
+			//socket = new Socket("localhost", 8888);
+			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
 			outputStream.writeInt(Protocol.REQ_CONTACT);
 			Utility.writeString(this.name, outputStream);
 			Utility.writeString(name, outputStream);
 
-			InputStream reader = socket.getInputStream();
+			InputStream reader = connection.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
 			int type = inputStream.readInt();
 			switch(type) {
@@ -370,32 +359,46 @@ public class Client extends Thread {
 		System.out.println("Client " + this.getName() +" listening");
 		try {
 			server = new ServerSocket(0);
-			connect(this.name);
+			this.connection = connect(this.name);
+
 			// TODO add if/else connected to server
-			while(true) {
-				if(STOP) {
-					break;
+			
+			Thread t = new Thread() {
+				public void run() {
+					while(true) {
+						if(STOP) {
+							break;
+						}
+
+						//Socket connection = server.accept();
+						try {
+							readerServer = connection.getInputStream();
+							inputStreamServer = new DataInputStream(readerServer);
+							
+							int type = inputStreamServer.readInt();
+							//System.out.println(type);
+							switch(type) {
+							case Protocol.REPLY_TEXT :
+								getText(connection);
+								break;
+							case Protocol.REQ_PUBLIC_KEY :
+								sendPublicKey(connection);
+								break;
+							case Protocol.REPLY_PUBLIC_KEY:
+								readPublicKey(connection);
+								break;
+							default:
+								break;
+							}
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
 				}
-				Socket connection = server.accept();
-				InputStream reader = connection.getInputStream();
-				DataInputStream inputStream = new DataInputStream(reader);
-				
-				int type = inputStream.readInt();
-				switch(type) {
-				case Protocol.REPLY_TEXT :
-					getText(connection);
-					break;
-				case Protocol.REQ_PUBLIC_KEY :
-					sendPublicKey(connection);
-					break;
-				default:
-					break;
-				}
-				connection.close();
-				//reader.close();
-//				outputStream.close();
-//				inputStream.close();
-			}
+			};
+			t.start();
+
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
@@ -403,6 +406,30 @@ public class Client extends Thread {
 		//Thread.currentThread().interrupt();
 	}
 	
+	private void readPublicKey(Socket connection) {
+		try {			
+			InputStream reader = connection.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			
+			KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+			int sizeMod = inputStream.readInt();
+			byte[] bytesMod = new byte[sizeMod];
+			for(int i=0; i<sizeMod; i++) {
+				bytesMod[i] = inputStream.readByte();
+			}
+			int sizeExp = inputStream.readInt();
+			byte[] bytesExp = new byte[sizeExp];
+			for(int i=0; i<sizeExp; i++) {
+				bytesExp[i] = inputStream.readByte();
+			}
+			RSAPublicKeySpec keySpec = new RSAPublicKeySpec(new BigInteger(bytesMod), new BigInteger(bytesExp));
+			publicKeyTarget = (RSAPublicKey) keyFactory.generatePublic(keySpec);
+
+		} catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+			e.printStackTrace();
+		}
+	}
+
 	public void getText(Socket connection) {
 		try {
 			RSAPrivateKey key = null;
