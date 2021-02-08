@@ -4,16 +4,17 @@ import java.util.concurrent.TimeUnit;
 
 import main.network.Client;
 import main.network.Server;
+import main.network.ServerMain;
 
 public class App {
 	
-	public Server server;
+	public ServerMain server;
 	public Client clientSender;
 	public Client clientReceiver;
 	public Client clientStranger;
 	
 	public void start() {
-		server = new Server();
+		server = new ServerMain();
 		clientSender = new Client(0, "user1");
 		clientReceiver = new Client(1, "user2");;
 		clientStranger = new Client(2, "user3");
@@ -23,10 +24,13 @@ public class App {
 //		clientSender.run();
 		new Thread(server).start();
 		
-		clientSender.register("user1");
-		clientReceiver.register("user2");
-		clientSender.addContact("user2");
-		clientReceiver.addContact("user1");
+//		clientSender.register("user1");
+//		clientReceiver.register("user2");
+		
+		new Thread(clientSender).start();
+		new Thread(clientReceiver).start();
+//		clientSender.addContact("user2");
+//		clientReceiver.addContact("user1");
 		
 //		// SLEEP
 //		try {
@@ -35,21 +39,21 @@ public class App {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-		new Thread(clientSender).start();
-		new Thread(clientReceiver).start();
+
 		
 		// SLEEP
 		try {
-			TimeUnit.SECONDS.sleep(3);
+			TimeUnit.SECONDS.sleep(2);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		clientSender.send("user2", "salut de 0");
+		
 		clientReceiver.send("user1", "et là ça marche tjours ?");
-		//clientReceiver.stopClient();
-		clientStranger.send("user2", "salut de stranger");
+		clientSender.send("user2", "salut de 0 v22222");
+		//clientStranger.send("user2", "salut de stranger");
 		//clientReceiver = new Client(1, 7001);
 		//clientSender.stopClient();
 		//server.stopServer();
