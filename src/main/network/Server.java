@@ -64,25 +64,31 @@ import java.math.BigInteger;
 
 
 public class Server extends Thread {
-	private MongoClient client;
+	//private MongoClient client;
 	private MongoDatabase db;
+	
+	private Socket connection;
 	
 	private HashMap<String, Integer> connectedByName;
 	private HashMap<Integer, String> connectedByPort;
 	
-	public Server() {
-		client = MongoClients.create("mongodb://127.0.0.1:27017/");
-		db = client.getDatabase("keys");
+	public Server(Socket connection, MongoDatabase db) {
 		connectedByName = new HashMap<String, Integer>();
 		connectedByPort = new HashMap<Integer, String>();
+		this.db = db;
+		this.connection = connection;
 	}
-	
+
 	private Socket socket;
 	private ServerSocket server;
 	private String message;
 	
 	private boolean STOP = false;
 
+	private ServerMain serverMain;
+	public void setServerMain(ServerMain sm) {
+		serverMain = sm;
+	}
 	
 	public String getMessage() {
 		return this.message;
@@ -95,24 +101,21 @@ public class Server extends Thread {
 	public void run() {
 		message = "";
 		try {
-			server = new ServerSocket(8888);
-			Socket connection = server.accept();
+			//server = new ServerSocket(8888);
+			//Socket connection = server.accept();
 			System.out.println("Server listening");
 			while(true) {
 				if(STOP) {
 					break;
-				}
-				if(connection.isClosed()) {
-					connection = server.accept();
 				}
 				InputStream reader = connection.getInputStream();
 				DataInputStream inputStream = new DataInputStream(reader);
 				
 				int type = inputStream.readInt();
 				switch(type) {
-				case Protocol.REQ_CONNECT :
-					doConnect(connection);
-					break;
+//				case Protocol.REQ_CONNECT :
+//					doConnect(connection);
+//					break;
 				case Protocol.REQ_CONTACT :
 					doSendContact(connection);
 					break;
@@ -160,7 +163,7 @@ public class Server extends Thread {
 				outputStream.writeInt(Protocol.KO);
 			}
 			
-			connection.close();
+			//connection.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -200,22 +203,23 @@ public class Server extends Thread {
 				outputStream.writeInt(Protocol.KO);
 			}
 		
-			connection.close();
+			//connection.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
-	private void doConnect(Socket connection) {
+	public String doConnect(Socket connection) {
 		InputStream reader;
+		String name = null;
 		try {
 			reader = connection.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
 			int port = inputStream.readInt();
 			
 			// Server receiving user name
-			String name = Utility.readString(inputStream);
+			name = Utility.readString(inputStream);
 			
 			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
@@ -242,18 +246,20 @@ public class Server extends Thread {
 			sig.update(challenge);
 			if(sig.verify(signature)) {
 				outputStream.writeInt(Protocol.OK);
-				
+				// TODO send token
 				connectedByName.put(name, port);
 				connectedByPort.put(port, name);
 			} else {
 				outputStream.writeInt(Protocol.KO);
+				connection.close();
 			}
 			
-			connection.close();
+			//connection.close();
 		} catch (IOException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		return name;
 	}
 
 	
@@ -308,7 +314,6 @@ public class Server extends Thread {
 				outputStream.writeInt(Protocol.KO);
 			}
 
-
 		} catch (IOException | InvalidKeySpecException | NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
@@ -335,31 +340,49 @@ public class Server extends Thread {
 			for(int i=0; i<size; i++) {
 				bytes[i] = inputStream.readByte();
 			}
-			
+		
 //			System.out.println("Server reads : " + new String(bytes,StandardCharsets.UTF_8) +
 //							   " (from " + this.connectedByPort.get(portSender) + ")");
-			socket = new Socket("localhost", this.connectedByName.get(nameTarget));
-			OutputStream writer = socket.getOutputStream();
-			DataOutputStream outputStream = new DataOutputStream(writer);
-			outputStream.writeInt(Protocol.REPLY_TEXT);
-			outputStream.writeInt(bytes.length);
-			//byte[] bytes = message.getBytes();
-			for(int i=0; i<size; i++) {
-				outputStream.writeByte(bytes[i]);
-			}
-			//writer.close();
-			this.message = new String(bytes);
+			//socket = new Socket("localhost", connection.getPort());
+			this.serverMain.getConnections().get(nameTarget).sendText(bytes, size);
+			
+//			OutputStream writer = connection.getOutputStream();
+//			DataOutputStream outputStream = new DataOutputStream(writer);
+//			outputStream.writeInt(Protocol.REPLY_TEXT);
+//			outputStream.writeInt(bytes.length);
+//			//byte[] bytes = message.getBytes();
+//			for(int i=0; i<size; i++) {
+//				outputStream.writeByte(bytes[i]);
+//			}
+//			//writer.close();
+//			this.message = new String(bytes);
 
-			connection.close();
+			//connection.close();
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 	}
 
+	public void sendText(byte[] bytes, int size) {
+		OutputStream writer;
+		try {
+			writer = connection.getOutputStream();
+			DataOutputStream outputStream = new DataOutputStream(writer);
+			outputStream.writeInt(Protocol.REPLY_TEXT);
+			outputStream.writeInt(bytes.length);
+			for(int i=0; i<size; i++) {
+				outputStream.writeByte(bytes[i]);
+			}
+			this.message = new String(bytes);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	public static void main(String[] args) {
-		Server server = new Server();
-		server.run();
+//		Server server = new Server();
+//		server.run();
 	}
 	
 }
