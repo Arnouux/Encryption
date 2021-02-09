@@ -66,7 +66,6 @@ import java.math.BigInteger;
 
 public class Client extends Thread {
 	
-	private long id;
 	private String name;
 	private int port;
 	private ServerSocket server;
@@ -79,8 +78,7 @@ public class Client extends Thread {
 	
 	Socket connection;
 	
-	public Client(long id, String name) {
-		this.id = id;
+	public Client(String name) {
 		this.name = name;
 	}
 	
@@ -115,7 +113,6 @@ public class Client extends Thread {
 
 			System.out.println("Client " + this.getName() +" writes : " + text);
 			outputStream.writeInt(Protocol.REQ_TEXT);
-			//outputStream.writeLong(this.id);
 			
 			// TODO server receive
 			// Signature from connect token
@@ -340,17 +337,6 @@ public class Client extends Thread {
 			Utility.writeString(this.name, outputStream);
 			Utility.writeString(name, outputStream);
 
-			InputStream reader = connection.getInputStream();
-			DataInputStream inputStream = new DataInputStream(reader);
-			int type = inputStream.readInt();
-			switch(type) {
-			case Protocol.OK:
-				System.out.println("Add contact went OK");
-				break;
-			case Protocol.KO:
-				System.out.println("Add contact went KO");
-				break;
-			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -399,6 +385,12 @@ public class Client extends Thread {
 							int type = inputStreamServer.readInt();
 							//System.out.println(type);
 							switch(type) {
+							case Protocol.OK:
+								System.out.println("Operation went OK");
+								break;
+							case Protocol.KO:
+								System.out.println("Operation went KO");
+								break;
 							case Protocol.REPLY_TEXT :
 								getText(connection);
 								break;

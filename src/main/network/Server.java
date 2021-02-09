@@ -150,7 +150,6 @@ public class Server extends Thread {
 	
 	
 	private void doSendContactsList(Socket connection) {
-		InputStream reader;
 		try {
 			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
