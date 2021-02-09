@@ -408,6 +408,8 @@ public class Client extends Thread {
 							case Protocol.REPLY_PUBLIC_KEY:
 								readPublicKey(connection);
 								break;
+							case Protocol.REPLY_CONTACTS_LIST:
+								readContactsList(connection);
 							default:
 								break;
 							}
@@ -417,6 +419,7 @@ public class Client extends Thread {
 						}
 					}
 				}
+
 			};
 			t.start();
 
@@ -425,6 +428,20 @@ public class Client extends Thread {
 		}
 		//System.out.println("Client " + this.getName() + " stopped");
 		//Thread.currentThread().interrupt();
+	}
+
+	private void readContactsList(Socket connection) {
+		try {			
+			InputStream reader = connection.getInputStream();
+			DataInputStream inputStream = new DataInputStream(reader);
+			
+			int nb = inputStream.readInt();
+			for(int i=0; i<nb; i++) {
+				System.out.println(Utility.readString(inputStream));
+			}
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	private void readPublicKey(Socket connection) {

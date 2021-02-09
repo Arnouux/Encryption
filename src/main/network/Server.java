@@ -78,6 +78,8 @@ public class Server extends Thread {
 		this.db = db;
 		this.connection = connection;
 	}
+	
+	private String clientName;
 
 	private Socket socket;
 	private ServerSocket server;
@@ -148,14 +150,23 @@ public class Server extends Thread {
 	
 	
 	private void doSendContactsList(Socket connection) {
-		// TODO Auto-generated method stub
-
 		InputStream reader;
 		try {
 			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
 			outputStream.writeInt(Protocol.REPLY_CONTACTS_LIST);
+			
+			MongoCollection<Document> coll = db.getCollection("users");
+			Document doc = coll.find(eq("_id", clientName)).first();
+
+			ArrayList<String> contacts = (ArrayList<String>) doc.get("contacts");
+			int nb = contacts.size();
+			outputStream.writeInt(nb);
+			for(int i=0; i<nb; i++) {
+				Utility.writeString(contacts.get(i), outputStream);
+			}
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -278,6 +289,7 @@ public class Server extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		clientName = name;
 		return name;
 	}
 

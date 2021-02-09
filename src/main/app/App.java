@@ -52,6 +52,8 @@ public class App {
 		System.out.println("CONTACTS LIST");
 		clientSender.getContacts();
 		System.out.println("END CONTACTS LIST");
+
+		
 		clientSender.send("user2", "salut de 0");
 		
 		clientReceiver.send("user1", "et là ça marche tjours ?");
