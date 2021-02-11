@@ -31,31 +31,32 @@ public class App {
 //		clientReceiver.register("user2");
 		
 //		new Thread(clientSender).start();
-		ClientUI ui = new ClientUI("user1");
-		String[] user = new String[1];
-		user[0] = "user1";
-		ui.main(user);
-		new Thread(clientReceiver).start();
+
 //		clientSender.addContact("user2");
 //		clientReceiver.addContact("user1");
 		
-//		// SLEEP
+		// SLEEP
 //		try {
 //			TimeUnit.SECONDS.sleep(2);
 //		} catch (InterruptedException e) {
 //			// TODO Auto-generated catch block
 //			e.printStackTrace();
 //		}
-
+		ClientUI ui = new ClientUI("user1");
+		String[] user = new String[1];
+		user[0] = "user1";
+		ui.main(user);
 		
-		// SLEEP
-//		try {
-//			TimeUnit.SECONDS.sleep(5);
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		//SLEEP
+		try {
+			TimeUnit.SECONDS.sleep(5);
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		new Thread(clientReceiver).start();
 //		
+//		ui.getAndShowContacts();
 //		System.out.println("CONTACTS LIST");
 //		clientSender.getContacts();
 //		System.out.println("END CONTACTS LIST");
