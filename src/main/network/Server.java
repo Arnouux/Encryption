@@ -173,6 +173,7 @@ public class Server extends Thread {
 		
 	}
 
+	
 	private void doSendContact(Socket connection) {
 		try {
 			InputStream reader = connection.getInputStream();
@@ -355,7 +356,6 @@ public class Server extends Thread {
 			DataInputStream inputStream = new DataInputStream(reader);
 			//senderId = inputStream.readLong();
 			//receiverId = inputStream.readLong();
-			int portSender = inputStream.readInt();
 			
 			// Server reading target name
 			int nameSize = inputStream.readInt();
@@ -374,7 +374,16 @@ public class Server extends Thread {
 //			System.out.println("Server reads : " + new String(bytes,StandardCharsets.UTF_8) +
 //							   " (from " + this.connectedByPort.get(portSender) + ")");
 			//socket = new Socket("localhost", connection.getPort());
-			this.serverMain.getConnections().get(nameTarget).sendText(bytes, size);
+			
+			
+			Server serverTarget = this.serverMain.getConnections().get(nameTarget);
+			if(serverTarget != null) {
+				serverTarget.sendText(bytes, size);
+			} else {
+				System.out.println("Target not connected");
+			}
+			// Server storing message
+			//TODO
 			
 //			OutputStream writer = connection.getOutputStream();
 //			DataOutputStream outputStream = new DataOutputStream(writer);
