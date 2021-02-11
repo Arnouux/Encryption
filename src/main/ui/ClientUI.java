@@ -6,14 +6,18 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.BorderLayout;
 import javax.swing.JTextField;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import main.network.Client;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JList;
 import java.awt.event.ActionListener;
 import java.util.List;
 import java.awt.event.ActionEvent;
+import javax.swing.AbstractListModel;
 
 public class ClientUI {
 
@@ -22,6 +26,8 @@ public class ClientUI {
 	
 	private Client client;
 	private JTextField textFieldContact;
+	JPanel panelContacts = new JPanel();
+	JList<String> listContacts = new JList();
 
 	private List<String> contacts;
 
@@ -71,15 +77,15 @@ public class ClientUI {
 		textField.setColumns(10);
 		
 		JButton btnSend = new JButton("Send");
+		btnSend.setEnabled(false);
 		btnSend.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				client.send("user2", textField.getText());
+				client.send(listContacts.getSelectedValue(), textField.getText());
 			}
 		});
 		btnSend.setBounds(321, 9, 85, 21);
 		panelText.add(btnSend);
 		
-		JPanel panelContacts = new JPanel();
 		panelContacts.setBounds(10, 10, 86, 193);
 		frame.getContentPane().add(panelContacts);
 		panelContacts.setLayout(null);
@@ -88,26 +94,48 @@ public class ClientUI {
 		textFieldContact.setBounds(0, 0, 86, 19);
 		panelContacts.add(textFieldContact);
 		textFieldContact.setColumns(10);
+
 		
-		JList<String> listContacts = new JList<String>();
-		listContacts.setBounds(80, 59, -73, 124);
+		listContacts.setBounds(10, 46, 66, 147);
 		panelContacts.add(listContacts);
+		listContacts.setModel(new AbstractListModel<String>() {
+			String[] values = new String[] {"hello"};
+			public int getSize() {
+				return values.length;
+			}
+			public String getElementAt(int index) {
+				return values[index];
+			}
+		});
+		listContacts.addListSelectionListener(new ListSelectionListener() {
+
+            @Override
+            public void valueChanged(ListSelectionEvent arg0) {
+                if (!arg0.getValueIsAdjusting()) {
+                  btnSend.setEnabled(true);
+                }
+            }
+        });
 		
 		JButton btnAddContact = new JButton("Add");
 		btnAddContact.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				client.addContact(textFieldContact.getText());
-				contacts = client.getContacts();
-				listContacts.setListData(contacts.toArray(new String[1]));
-				frame.invalidate();
+				getAndShowContacts();
 			}
 		});
 		btnAddContact.setBounds(0, 22, 85, 21);
 		panelContacts.add(btnAddContact);
-
 		
-		JPanel panelMessages = new JPanel();
-		panelMessages.setBounds(106, 10, 320, 193);
-		frame.getContentPane().add(panelMessages);
+	}
+	
+	public void getAndShowContacts() {
+		contacts = client.getContacts();
+		DefaultListModel<String> model = new DefaultListModel<String>();
+		for(String c : contacts) {
+			model.addElement(c);
+		}
+		listContacts.setModel(model);
 	}
 }
+
