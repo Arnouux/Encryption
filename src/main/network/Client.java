@@ -75,6 +75,7 @@ public class Client extends Thread {
 	private DataInputStream inputStreamServer;
 
 	private volatile RSAPublicKey publicKeyTarget;
+	private volatile ArrayList<String> contacts = null;
 	
 	Socket connection;
 	
@@ -118,7 +119,6 @@ public class Client extends Thread {
 			// Signature from connect token
 			
 			
-			outputStream.writeInt(this.port);
 			byte[] targetNameBytes = targetName.getBytes();
 			outputStream.writeInt(targetNameBytes.length);
 			for(int i=0; i<targetNameBytes.length; i++) {
@@ -344,22 +344,26 @@ public class Client extends Thread {
 	}
 	
 	public List<String> getContacts() {
-		
-		ArrayList<String> contacts = new ArrayList<String>();
-
+		ArrayList<String> contactsList = null;
 		try {
 			OutputStream writer = connection.getOutputStream();
 			DataOutputStream outputStream = new DataOutputStream(writer);
 			
 			outputStream.writeInt(Protocol.REQ_CONTACTS_LIST);
-			// TODO wait for main stream to receive list
+
+			// Wait for main stream to receive list
+			while(contacts == null) {
+			}
+			
+			contactsList = contacts;
+			contacts = null;
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		return contacts;
+		return contactsList;
 	}
 
 	public void run() {
@@ -427,10 +431,12 @@ public class Client extends Thread {
 			InputStream reader = connection.getInputStream();
 			DataInputStream inputStream = new DataInputStream(reader);
 			
+			ArrayList<String> contactsList = new ArrayList<String>();
 			int nb = inputStream.readInt();
 			for(int i=0; i<nb; i++) {
-				System.out.println(Utility.readString(inputStream));
+				contactsList.add(Utility.readString(inputStream));
 			}
+			contacts = contactsList;
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
